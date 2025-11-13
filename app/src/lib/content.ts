@@ -3,6 +3,7 @@ import path from "path";
 import matter from "gray-matter";
 import { remark } from "remark";
 import html from "remark-html";
+import { MODULES } from "@/config/modules";
 
 export type DocMeta = {
   moduleId: string;
@@ -10,24 +11,35 @@ export type DocMeta = {
   title: string;
   order: number;
   level?: string;
+  status?: string;
+  labels?: string[];
 };
 
 const contentRoot = path.join(process.cwd(), "content", "modules");
 
 /**
- * Retourne la liste des modules disponibles (m01, m02, ...).
+ * IDs de modules autorisés (m01, m02, ...)
+ * -> base sur la config centrale.
  */
 export async function getModuleIds(): Promise<string[]> {
-  const entries = await fs.readdir(contentRoot, { withFileTypes: true });
-  return entries.filter((d) => d.isDirectory()).map((d) => d.name);
+  return MODULES.map((m) => m.id);
 }
 
 /**
  * Retourne les métadonnées de toutes les pages d'un module.
  */
 export async function getDocsForModule(moduleId: string): Promise<DocMeta[]> {
-  const moduleDir = path.join(contentRoot, moduleId.toLowerCase());
-  const files = await fs.readdir(moduleDir);
+  const normalized = moduleId.toLowerCase();
+  const moduleDir = path.join(contentRoot, normalized);
+
+  let files: string[];
+  try {
+    files = await fs.readdir(moduleDir);
+  } catch {
+    // pas de dossier => pas de pages
+    return [];
+  }
+
   const docs: DocMeta[] = [];
 
   for (const file of files) {
@@ -38,11 +50,15 @@ export async function getDocsForModule(moduleId: string): Promise<DocMeta[]> {
     const { data } = matter(source);
 
     docs.push({
-      moduleId: moduleId.toLowerCase(),
+      moduleId: normalized,
       slug: String(data.slug ?? file.replace(/\.md$/, "")),
       title: String(data.title ?? file),
       order: Number(data.order ?? 0),
       level: data.level ? String(data.level) : undefined,
+      status: data.status ? String(data.status) : undefined,
+      labels: Array.isArray(data.labels)
+        ? data.labels.map((l: unknown) => String(l))
+        : undefined,
     });
   }
 
@@ -54,7 +70,9 @@ export async function getDocsForModule(moduleId: string): Promise<DocMeta[]> {
  * Retourne une page complète (métadonnées + HTML) pour un module/slug donné.
  */
 export async function getDocBySlug(moduleId: string, slug: string) {
-  const moduleDir = path.join(contentRoot, moduleId.toLowerCase());
+  const normalized = moduleId.toLowerCase();
+  const moduleDir = path.join(contentRoot, normalized);
+
   const files = await fs.readdir(moduleDir);
 
   for (const file of files) {
@@ -70,11 +88,15 @@ export async function getDocBySlug(moduleId: string, slug: string) {
       const htmlContent = processed.toString();
 
       const meta: DocMeta = {
-        moduleId: moduleId.toLowerCase(),
+        moduleId: normalized,
         slug: docSlug,
         title: String(data.title ?? file),
         order: Number(data.order ?? 0),
         level: data.level ? String(data.level) : undefined,
+        status: data.status ? String(data.status) : undefined,
+        labels: Array.isArray(data.labels)
+          ? data.labels.map((l: unknown) => String(l))
+          : undefined,
       };
 
       return { meta, html: htmlContent };

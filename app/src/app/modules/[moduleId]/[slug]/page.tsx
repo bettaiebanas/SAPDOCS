@@ -1,3 +1,4 @@
+import { notFound } from "next/navigation";
 import { getDocBySlug } from "@/lib/content";
 
 export default async function DocPage({
@@ -5,18 +6,28 @@ export default async function DocPage({
 }: {
   params: Promise<{ moduleId: string; slug: string }>;
 }) {
-  // NEXT 16 : params est un Promise
   const { moduleId, slug } = await params;
   const normalizedId = moduleId.toLowerCase();
 
-  const doc = await getDocBySlug(normalizedId, slug);
+  let doc;
+  try {
+    doc = await getDocBySlug(normalizedId, slug);
+  } catch {
+    return notFound();
+  }
 
   return (
-    <main className="max-w-4xl mx-auto p-6">
-      <h1 className="text-3xl font-bold mb-6">{doc.meta.title}</h1>
+    <main>
+      <h1 className="text-3xl font-bold mb-4">{doc.meta.title}</h1>
+
+      {doc.meta.status && (
+        <p className="text-xs uppercase text-slate-500 mb-2">
+          Statut : {doc.meta.status}
+        </p>
+      )}
 
       <article
-        className="prose max-w-none"
+        className="prose max-w-none bg-white p-4 rounded-md border"
         dangerouslySetInnerHTML={{ __html: doc.html }}
       />
     </main>
