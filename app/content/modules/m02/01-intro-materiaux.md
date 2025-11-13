@@ -4,6 +4,8 @@ slug: intro-materiaux
 title: "Introduction aux données de base PP/MM"
 order: 1
 level: "débutant"
+status: "draft"
+labels: ["PP", "MM", "master-data"]
 ---
 
 # Introduction aux données de base PP/MM
@@ -23,3 +25,7 @@ flowchart LR
   BOM[BOM] --> MRP
   ROUT[Routing] --> MRP
   WC[Work Center] --> ROUT
+```
+
+> Ce contenu est un simple exemple de page de documentation.
+> On va ensuite enrichir avec la vraie matière SAP.
